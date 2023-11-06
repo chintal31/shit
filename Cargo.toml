@@ -3,9 +3,7 @@ name = "shit"
 version = "0.1.0"
 authors = ["Chintal Dholakiya <chintal3198@gmail.com>"]
 description = "Shit: An cli app resonating git client"
-keywords = ["cli", "search", "demo"]
-categories = ["command-line-utilities"]
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+edition = "2021"
 
 [dependencies]
 clap = { version = "4.4.7", features = ["derive"] }
