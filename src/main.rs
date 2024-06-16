@@ -1,33 +1,46 @@
+mod utils;
+use crate::utils::{compress_and_store, create_and_write_file, create_directory, update_index};
 use clap::{Args, Parser, Subcommand};
-use shit::{create_and_write_file, create_directory};
+use sha1::{Digest, Sha1};
 use std::env;
 use std::fs;
 
 #[derive(Debug, Parser)]
 pub struct UserInput {
     #[clap(subcommand)]
-    init: Command,
+    command: Command,
 }
 
 #[derive(Debug, Subcommand)]
 enum Command {
-    /// A command description
+    /// Initialize a git repo
     Init(Init),
+    /// Add a file to staging area
+    Add(Add),
+    /// Status of staging area
+    Status,
 }
 
 #[derive(Debug, Args)]
 struct Init {
-    /// Some particular parameter command A
+    /// Name of the directory
     #[clap(short, long, value_parser)]
     name: String,
 }
 
+#[derive(Debug, Args)]
+struct Add {
+    /// Name of the file to be added to staging area
+    #[clap(short, long, value_parser)]
+    file_name: String,
+}
+
 fn main() -> Result<(), std::io::Error> {
     let user_input: UserInput = UserInput::parse();
-    match user_input.init {
+    match user_input.command {
         Command::Init(init_command) => {
-            let curr_path = env::current_dir();
-            let dir_path = &format!("{}/{}", curr_path?.display(), init_command.name);
+            let curr_path = env::current_dir()?;
+            let dir_path = &format!("{}/{}", curr_path.display(), init_command.name);
 
             if fs::metadata(&dir_path).is_ok() {
                 eprintln!("Repository {} already exists", init_command.name);
@@ -71,6 +84,33 @@ fn main() -> Result<(), std::io::Error> {
             create_directory(&format!("{}/refs", git_dir_path))?;
 
             println!("Initialized empty repository: {}", init_command.name);
+            return Ok(());
+        }
+
+        Command::Add(add_command) => {
+            let curr_path = env::current_dir()?;
+            let file_path = &format!("{}/{}", curr_path.display(), add_command.file_name);
+            let content = fs::read(file_path)?;
+            let mut hasher = Sha1::new();
+            let header = format!("blob {}\0", content.len());
+            hasher.update(header.as_bytes());
+            hasher.update(&content);
+            let hash_arr = hasher.finalize();
+            let hash = format!("{:x}", hash_arr);
+            println!("Hash: {}", hash);
+            let content_to_store = format!("{}{:?}", header, &content);
+            let zip_path = &format!("{}/.git/objects/{}", curr_path.display(), &hash[..2]);
+            println!("Zip path: {}", zip_path);
+            create_directory(zip_path)?;
+            let zip_file_name = &format!("{}/{}", zip_path, &hash[2..]);
+            println!("Zip file name: {}", zip_file_name);
+            compress_and_store(content_to_store.as_bytes(), zip_file_name)?;
+            update_index(file_path, &hash)?;
+            return Ok(());
+        }
+
+        Command::Status => {
+            println!("Status command");
             return Ok(());
         }
     }
