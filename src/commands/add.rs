@@ -29,6 +29,6 @@ pub fn add_command(add_command: Add) -> Result<(), std::io::Error> {
     let zip_file_name = &format!("{}/{}", zip_path, &hash[2..]);
     println!("Zip file name: {}", zip_file_name);
     compress_and_store(content_to_store.as_bytes(), zip_file_name)?;
-    update_index(file_path, &hash)?;
+    update_index(file_path, hash)?;
     return Ok(());
 }

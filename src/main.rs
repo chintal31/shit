@@ -1,4 +1,5 @@
 mod commands;
+mod constants;
 mod utils;
 use crate::commands::{add, init, status, Command};
 use clap::Parser;

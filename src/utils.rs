@@ -7,24 +7,23 @@ use std::io::{Cursor, Error, Write};
 use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
-const INDEX_FILE: &str = ".git/index";
-const PREFIX_SIZE: usize = 62;
-const HASH_OFFSET: usize = 40;
+use crate::constants::{HASH_OFFSET, INDEX_FILE, PREFIX_SIZE};
+
 #[derive(Debug)]
-struct IndexEntry<'a> {
-    ctime_sec: u32,
-    ctime_nsec: u32,
-    mtime_sec: u32,
-    mtime_nsec: u32,
-    dev: u32,
-    ino: u32,
-    mode: u32,
-    uid: u32,
-    gid: u32,
-    size: u32,
-    hash: &'a str,
-    name: String,
-    stage: u16,
+pub struct IndexEntry {
+    pub ctime_sec: u32,
+    pub ctime_nsec: u32,
+    pub mtime_sec: u32,
+    pub mtime_nsec: u32,
+    pub dev: u32,
+    pub ino: u32,
+    pub mode: u32,
+    pub uid: u32,
+    pub gid: u32,
+    pub size: u32,
+    pub hash: String,
+    pub name: String,
+    pub stage: u16,
 }
 
 pub fn create_directory(path: &str) -> Result<(), Error> {
@@ -58,7 +57,7 @@ pub fn compress_and_store(input: &[u8], output_file: &str) -> Result<(), Error> 
     Ok(())
 }
 
-pub fn update_index(file_path: &str, hash: &str) -> Result<(), Error> {
+pub fn update_index(file_path: &str, hash: String) -> Result<(), Error> {
     let index_entry_result = create_index_entry(file_path, hash);
     println!("{:?}", index_entry_result);
     match index_entry_result {
@@ -71,7 +70,7 @@ pub fn update_index(file_path: &str, hash: &str) -> Result<(), Error> {
     }
 }
 
-fn create_index_entry<'a>(file: &'a str, hash: &'a str) -> Result<IndexEntry<'a>, std::io::Error> {
+fn create_index_entry(file: &str, hash: String) -> Result<IndexEntry, std::io::Error> {
     // Get file metadata
     let metadata = fs::metadata(file)?;
 
@@ -134,7 +133,7 @@ fn encode_index_entry(e: &IndexEntry) -> Vec<u8> {
     }
 
     // Write the hash
-    let hash_bytes = hex::decode(e.hash).unwrap_or_else(|_| vec![0; 20]); // Assuming hash is hex encoded
+    let hash_bytes = hex::decode(e.hash.to_string()).unwrap_or_else(|_| vec![0; 20]); // Assuming hash is hex encoded
     buf[HASH_OFFSET..HASH_OFFSET + hash_bytes.len()].copy_from_slice(&hash_bytes);
 
     // Write name
